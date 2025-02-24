@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: music-service
+  r2dbc:
+    url: r2dbc:mysql://${DB_URL:localhost}:${DB_PORT:3306}/${DB_NAME:mupl_music}
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:password}
+  sql:
+    init:
+      platform: mysql
+  logging:
+    level:
+      org.springframework.r2dbc: DEBUG
+server:
+  port: 11000
+
+minio:
+  host: ${MINIO_HOST:http://localhost:10000}
+  access-key: ${MINIO_ACCESS_KEY:kIlhwnt7Za2rPDKk2UUi}
+  secret-key: ${MINIO_SECRET_KEY:t1NHe7LpHLJEVfRO63YJmbebpkzM029HOErnMCib}
+
+#debug: true
