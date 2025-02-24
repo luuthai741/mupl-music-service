@@ -1,4 +1,4 @@
-package com.mupl.music_service.dto.request;
+package com.mupl.music_service.dto.request.artist;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.mupl.music_service.utils.constain.Country;
@@ -12,8 +12,7 @@ import java.time.LocalDate;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ArtistCreateRequest {
-    private String name;
+public class ArtistUpdateRequest {
     private Gender gender;
     private Country country;
     private String description;

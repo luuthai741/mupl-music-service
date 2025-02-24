@@ -27,6 +27,9 @@ public class RouteConfig {
     public RouterFunction<ServerResponse> artistRouterFunction(ArtistHandler artistHandler) {
         return RouterFunctions
                 .route(RequestPredicates.POST(convertUri("artists")), artistHandler::createArtist)
-                .andRoute(RequestPredicates.GET(convertUri("artists")), artistHandler::getArtists);
+                .andRoute(RequestPredicates.GET(convertUri("artists")), artistHandler::getArtists)
+                .andRoute(RequestPredicates.GET(convertUri("artists/{id}")), artistHandler::getArtist)
+                .andRoute(RequestPredicates.PUT(convertUri("artists/{id}")), artistHandler::updateArtist)
+                .andRoute(RequestPredicates.DELETE(convertUri("artists/{id}")),artistHandler::deleteArtist);
     }
 }
