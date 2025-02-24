@@ -1,6 +1,7 @@
 package com.mupl.music_service.config;
 
 import com.mupl.music_service.handler.ArtistHandler;
+import com.mupl.music_service.handler.GenreHandler;
 import com.mupl.music_service.handler.SongHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,5 +32,14 @@ public class RouteConfig {
                 .andRoute(RequestPredicates.GET(convertUri("artists/{id}")), artistHandler::getArtist)
                 .andRoute(RequestPredicates.PUT(convertUri("artists/{id}")), artistHandler::updateArtist)
                 .andRoute(RequestPredicates.DELETE(convertUri("artists/{id}")),artistHandler::deleteArtist);
+    }
+
+    @Bean(name = "genreRouter")
+    public RouterFunction<ServerResponse> genreRouterFunction(GenreHandler genreHandler) {
+        return RouterFunctions
+                .route(RequestPredicates.POST(convertUri("genres")), genreHandler::createGenre)
+                .andRoute(RequestPredicates.GET(convertUri("genres")), genreHandler::getAllGenres)
+                .andRoute(RequestPredicates.GET(convertUri("genres/{id}")), genreHandler::getGenre)
+                .andRoute(RequestPredicates.DELETE(convertUri("genres/{id}")),genreHandler::deleteGenre);
     }
 }
