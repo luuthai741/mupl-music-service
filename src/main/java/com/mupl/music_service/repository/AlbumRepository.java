@@ -11,4 +11,5 @@ import reactor.core.publisher.Mono;
 public interface AlbumRepository extends R2dbcRepository<AlbumEntity, Integer> {
     Mono<AlbumEntity> findByName(String title);
     Flux<AlbumEntity> findAllBy(Pageable pageable);
+    Flux<AlbumEntity> findAllByArtistId(Integer artistId, Pageable pageable);
 }

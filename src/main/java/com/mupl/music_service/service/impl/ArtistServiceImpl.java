@@ -50,10 +50,8 @@ public class ArtistServiceImpl implements ArtistService {
                     artistEntity.setCountry(request.getCountry().getUrl());
                     artistEntity.setGender(request.getGender().getValue());
                     return artistRepository.save(artistEntity)
-                            .flatMap(artist ->
-                                    Mono.just(modelMapper.map(artist, ArtistResponse.class)));
-                })
-                .doOnError(e -> log.error("Error in createArtist service", e));
+                            .map(artist -> modelMapper.map(artist, ArtistResponse.class));
+                });
     }
 
     @Override

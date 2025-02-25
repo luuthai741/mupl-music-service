@@ -15,6 +15,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
@@ -66,9 +67,16 @@ public class AlbumServiceImpl implements AlbumService {
     }
 
     @Override
-    public Mono<PageableResponse> getAlbums(int page, int size, String sortBy, Sort.Direction sortOrder) {
+    public Mono<PageableResponse> getAlbums(int page, int size, String sortBy, Sort.Direction sortOrder, String artistId) {
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by(sortOrder, sortBy));
-        return albumRepository.findAllBy(pageable)
+
+        Flux<AlbumEntity> albumEntityFlux;
+        if (artistId != null) {
+            albumEntityFlux = albumRepository.findAllByArtistId(Integer.parseInt(artistId), pageable);
+        } else {
+            albumEntityFlux = albumRepository.findAllBy(pageable);
+        }
+        return albumEntityFlux
                 .collectList()
                 .zipWith(albumRepository.count())
                 .map(tuple -> {

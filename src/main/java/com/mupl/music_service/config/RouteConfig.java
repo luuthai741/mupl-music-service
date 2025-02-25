@@ -49,6 +49,7 @@ public class RouteConfig {
         return RouterFunctions
                 .route(RequestPredicates.POST(convertUri("albums")), albumHandler::createAlbum)
                 .andRoute(RequestPredicates.GET(convertUri("albums")), albumHandler::getAllAlbums)
+                .andRoute(RequestPredicates.GET(convertUri("artists/{artistId}/albums")), albumHandler::getAllAlbums)
                 .andRoute(RequestPredicates.GET(convertUri("albums/{id}")), albumHandler::getAlbumById)
                 .andRoute(RequestPredicates.PUT(convertUri("albums/{id}")), albumHandler::updateAlbum)
                 .andRoute(RequestPredicates.DELETE(convertUri("albums/{id}")),albumHandler::deleteAlbum);

@@ -41,7 +41,8 @@ public class AlbumHandler {
         int size = Integer.parseInt(request.queryParam("size").orElse("10"));
         String sortBy = request.queryParam("sortBy").orElse("albumId");
         Sort.Direction sortOrder = Sort.Direction.fromString(request.queryParam("sortOrder").orElse("ASC"));
-        return ServerResponse.ok().body(albumService.getAlbums(page, size, sortBy, sortOrder), PageableResponse.class);
+        String artistId = request.pathVariable("artistId");
+        return ServerResponse.ok().body(albumService.getAlbums(page, size, sortBy, sortOrder, artistId), PageableResponse.class);
     }
 
     public Mono<ServerResponse> getAlbumById(ServerRequest request) {

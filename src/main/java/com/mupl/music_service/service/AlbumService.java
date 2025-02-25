@@ -15,5 +15,5 @@ public interface AlbumService {
 
     Mono<AlbumResponse> deleteAlbum(String id);
 
-    Mono<PageableResponse> getAlbums(int page, int size, String sortBy, Sort.Direction sortOrder);
+    Mono<PageableResponse> getAlbums(int page, int size, String sortBy, Sort.Direction sortOrder, String artistId);
 }
