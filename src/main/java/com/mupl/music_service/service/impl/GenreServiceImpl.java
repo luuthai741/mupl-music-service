@@ -32,8 +32,7 @@ public class GenreServiceImpl implements GenreService {
                     genreEntity.setCreatedAt(LocalDateTime.now());
                     return genreRepository.save(genreEntity)
                             .map(response -> modelMapper.map(response, GenreResponse.class));
-                }))
-                .cast(GenreResponse.class);
+                })).cast(GenreResponse.class);
     }
 
     @Override
