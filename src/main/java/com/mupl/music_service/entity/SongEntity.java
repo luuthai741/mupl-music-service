@@ -20,7 +20,6 @@ public class SongEntity {
     private Long songId;
     private String title;
     private Integer albumId;
-    private Integer genreId;
     private String imagePath;
     private LocalDate releasedAt;
     private LocalDateTime updatedAt;

@@ -6,10 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.codec.multipart.FilePart;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
-import java.util.Set;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -17,10 +16,11 @@ import java.util.Set;
 @Builder
 public class SongCreateRequest {
     private String title;
-    private Set<String> artists;
-    private String album;
-    private String genre;
-    private FilePart file;
+    private List<Integer> artistIds;
+    private List<Integer> genreIds;
+    private Integer albumId;
+    private FilePart songFile;
+    private FilePart imageFile;
     @DateTimeFormat(pattern = "dd-MM-yyyy")
     private LocalDate releasedAt;
 }

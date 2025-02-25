@@ -21,8 +21,7 @@ public class RouteConfig {
     @Bean(name = "songRouter")
     public RouterFunction<ServerResponse> songRouterFunction(SongHandler songHandler) {
         return RouterFunctions
-                .route(RequestPredicates.POST(convertUri("songs")), songHandler::createSong)
-                .andRoute(RequestPredicates.GET(convertUri("songs/{name}")), songHandler::createSong);
+                .route(RequestPredicates.GET(convertUri("songs")), songHandler::getSong);
     }
 
     @Bean(name = "artistRouter")
