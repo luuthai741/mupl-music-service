@@ -23,4 +23,9 @@ public class GenreSongServiceImpl implements GenreSongService {
         return genreSongRepository.save(genreSongEntity)
                 .then();
     }
+
+    @Override
+    public Mono<Void> deleteAllBySongId(Long songId) {
+        return genreSongRepository.deleteAllBySongId(songId);
+    }
 }

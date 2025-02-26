@@ -17,6 +17,8 @@ public class SongResponse {
     private String album;
     private String imagePath;
     private String songPath;
+    private Boolean isFreeToPlay;
+    private int duration;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyy")
     private LocalDate releasedAt;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyy HH:mm:ss")

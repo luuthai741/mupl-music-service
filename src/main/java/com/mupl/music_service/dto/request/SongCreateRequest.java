@@ -19,6 +19,7 @@ public class SongCreateRequest {
     private List<Integer> artistIds;
     private List<Integer> genreIds;
     private Integer albumId;
+    private Boolean isFreeToPlay;
     private FilePart songFile;
     private FilePart imageFile;
     @DateTimeFormat(pattern = "dd-MM-yyyy")

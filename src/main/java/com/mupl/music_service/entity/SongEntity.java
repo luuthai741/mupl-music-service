@@ -21,7 +21,10 @@ public class SongEntity {
     private String title;
     private Integer albumId;
     private String imagePath;
+    private String songPath;
     private LocalDate releasedAt;
+    private Boolean isFreeToPlay;
+    private Integer duration;
     private LocalDateTime updatedAt;
     private LocalDateTime createdAt;
 }

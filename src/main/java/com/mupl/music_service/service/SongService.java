@@ -6,4 +6,6 @@ import reactor.core.publisher.Mono;
 
 public interface SongService {
     Mono<SongResponse> createSong(SongCreateRequest songCreateRequest);
+    Mono<SongResponse> getSong(String songId);
+    Mono<SongResponse> deleteSong(String songId);
 }

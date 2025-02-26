@@ -23,4 +23,9 @@ public class ArtistSongServiceImpl implements ArtistSongService {
         return artistSongRepository.save(artistSongEntity)
                 .then();
     }
+
+    @Override
+    public Mono<Void> deleteAllBySongId(Long songId) {
+        return artistSongRepository.deleteAllBySongId(songId);
+    }
 }

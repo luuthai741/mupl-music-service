@@ -10,7 +10,6 @@ import com.mupl.music_service.service.AlbumService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -79,15 +78,6 @@ public class AlbumServiceImpl implements AlbumService {
         return albumEntityFlux
                 .collectList()
                 .zipWith(albumRepository.count())
-                .map(tuple -> {
-                    PageImpl pageImpl = new PageImpl(tuple.getT1(), pageable, tuple.getT2());
-                    return PageableResponse.builder()
-                            .totalPages(pageImpl.getTotalPages())
-                            .totalElements(pageImpl.getTotalElements())
-                            .page(page)
-                            .pageSize(size)
-                            .content(tuple.getT1())
-                            .build();
-                });
+                .map(tuple -> new PageableResponse(tuple.getT1(), pageable, tuple.getT2()));
     }
 }

@@ -11,7 +11,6 @@ import com.mupl.music_service.service.ArtistService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -72,16 +71,7 @@ public class ArtistServiceImpl implements ArtistService {
         return artistRepository.findAllBy(pageable)
                 .collectList()
                 .zipWith(artistRepository.count())
-                .map(tuple -> {
-                    PageImpl pagable =  new PageImpl(tuple.getT1(), pageable, tuple.getT2());
-                    return PageableResponse.builder()
-                                    .content(pagable.getContent())
-                                    .page(page)
-                                    .pageSize(size)
-                                    .totalPages(pagable.getTotalPages())
-                                    .totalElements(pagable.getTotalElements())
-                            .build();
-                });
+                .map(tuple -> new PageableResponse(tuple.getT1(), pageable, tuple.getT2()));
     }
 
     @Override
