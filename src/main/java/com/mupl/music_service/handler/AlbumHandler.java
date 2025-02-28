@@ -42,7 +42,6 @@ public class AlbumHandler {
     public Mono<ServerResponse> getAllAlbums(ServerRequest request) {
         Pageable pageable = RequestUtils.getPageable(request,"albumId");
         String artistId = RequestUtils.getPathVariable(request,"artistId");
-
         return ServerResponse.ok().body(albumService.getAlbums(pageable, artistId), PageableResponse.class);
     }
 
@@ -64,5 +63,4 @@ public class AlbumHandler {
                         .badRequest()
                         .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage())));
     }
-
 }

@@ -1,9 +1,6 @@
 package com.mupl.music_service.config;
 
-import com.mupl.music_service.handler.AlbumHandler;
-import com.mupl.music_service.handler.ArtistHandler;
-import com.mupl.music_service.handler.GenreHandler;
-import com.mupl.music_service.handler.SongHandler;
+import com.mupl.music_service.handler.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.server.RequestPredicates;
@@ -16,6 +13,17 @@ public class RouteConfig {
     private String convertUri(String uri) {
         final String PREFIX = "/api/v1/mupl/";
         return PREFIX + uri;
+    }
+
+    @Bean(name = "lyricRouter")
+    public RouterFunction<ServerResponse> lyricRouterFunction(LyricHandler lyricHandler) {
+        return RouterFunctions
+                .route(RequestPredicates.POST(convertUri("lyrics")), lyricHandler::createLyric)
+                .andRoute(RequestPredicates.PUT(convertUri("lyrics/{id}")), lyricHandler::updateLyric)
+                .andRoute(RequestPredicates.DELETE(convertUri("lyrics/{id}")), lyricHandler::deleteAlbum)
+                .andRoute(RequestPredicates.GET(convertUri("lyrics/{id}")), lyricHandler::getLyric)
+                .andRoute(RequestPredicates.GET(convertUri("songs/{id}/lyrics")), lyricHandler::getLyricBySong)
+                .andRoute(RequestPredicates.GET(convertUri("lyrics")), lyricHandler::getLyrics);
     }
 
     @Bean(name = "songRouter")
