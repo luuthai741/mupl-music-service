@@ -23,7 +23,7 @@ public class PageableResponse {
 
     public PageableResponse(List<?> content, Pageable pageable, long totalElements) {
         Page<?> pageImpl = new PageImpl<>(content, pageable, totalElements);
-        this.page = pageImpl.getNumber();
+        this.page = pageImpl.getNumber() + 1;
         this.pageSize = pageImpl.getSize();
         this.totalPages = pageImpl.getTotalPages();
         this.totalElements = pageImpl.getTotalElements();

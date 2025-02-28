@@ -1,21 +1,32 @@
 package com.mupl.music_service.service;
 
+import com.mupl.music_service.dto.response.SongMetaData;
 import com.mupl.music_service.entity.SongEntity;
+import com.mupl.music_service.exception.BadRequestException;
 import com.mupl.music_service.repository.SongRepository;
+import com.mupl.music_service.utils.FileUtils;
+import com.mupl.music_service.utils.RequestUtils;
 import com.mupl.music_service.utils.constain.EventType;
 import io.minio.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferFactory;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.server.ServerRequest;
+import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -29,7 +40,6 @@ public class StorageService {
     private final String BUCKET_NAME = "mupl";
     private final SongRepository songRepository;
     private final MinioClient minioClient;
-    private final DataBufferFactory dataBufferFactory = new DefaultDataBufferFactory();
     private static boolean isBucketExist = false;
 
     private void checkBucket() {
@@ -68,18 +78,20 @@ public class StorageService {
                 );
     }
 
-    public Mono<String> uploadToMinio(String songName, byte[] fileData, EventType eventType) {
+    public Mono<String> uploadToMinio(Long songId, String songName, byte[] fileData, EventType eventType) {
         checkBucket();
+        String filePath = FileUtils.getFileName(songId, songName);
+        log.info("uploadToMinio: songId={}, filePath={}, eventType={}", songId, filePath, eventType);
         return Mono.fromCallable(() -> {
             ByteArrayInputStream inputStream = new ByteArrayInputStream(fileData);
             minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(BUCKET_NAME)
-                            .object(songName)
+                            .object(filePath)
                             .stream(inputStream, fileData.length, -1)
                             .contentType(EventType.getContentTypeByEventType(eventType))
                             .build());
-            return songName;
+            return filePath;
         });
     }
 
@@ -98,23 +110,29 @@ public class StorageService {
 
     public Mono<Void> uploadFile(Long songId, FilePart filePart, EventType eventType) {
         if (ObjectUtils.isEmpty(filePart)) {
-            log.warn("Event {} filePart is empty", eventType);
+            log.info("Event {} filePart is empty", eventType);
             return Mono.empty();
         }
         return DataBufferUtils.join(filePart.content())
                 .flatMap(dataBuffer -> {
-                    byte[] bytes = new byte[dataBuffer.readableByteCount()];
-                    dataBuffer.read(bytes);
-                    DataBufferUtils.release(dataBuffer);
-                    return uploadToMinio(filePart.filename(), bytes, eventType)
-                            .flatMap(filePath -> songRepository.findById(songId)
-                                    .flatMap(song -> {
-                                        setBaseOnEventType(eventType, song, filePath, bytes);
-                                        log.info("Update song {}, path {}", song, filePath);
-                                        return songRepository.save(song).then(Mono.empty());
-                                    }));
-                });
-
+                    try {
+                        byte[] bytes = new byte[dataBuffer.readableByteCount()];
+                        dataBuffer.read(bytes);
+                        return uploadToMinio(songId, filePart.filename(), bytes, eventType)
+                                .flatMap(filePath -> songRepository.findById(songId)
+                                        .flatMap(song -> {
+                                            setBaseOnEventType(eventType, song, filePath, bytes);
+                                            log.info("Update song {}, path {}", song, filePath);
+                                            return songRepository.save(song).then(Mono.empty());
+                                        }));
+                    } finally {
+                        DataBufferUtils.release(dataBuffer);
+                    }
+                })
+                .onErrorResume(e -> {
+                    log.error("Failed to process file upload", e);
+                    return Mono.empty(); // Tránh crash ứng dụng
+                }).then();
     }
 
     private void setBaseOnEventType(EventType eventType, SongEntity songEntity, String filePath, byte[] fileBytes) {
@@ -144,31 +162,81 @@ public class StorageService {
         return duration;
     }
 
-//    private Mono<String> uploadToMinio(String songName, FilePart filePart, EventType eventType) {
-//        checkBucket();
-//        final String songPath = FileUtils.getFileName(songName);
-//        return convertFilePartToFile(filePart)
-//                .flatMap(file -> {
-//                    try (FileInputStream fileInputStream = new FileInputStream(file)) {
-//                        minioClient.putObject(
-//                                PutObjectArgs.builder()
-//                                        .bucket(BUCKET_NAME)
-//                                        .object(songPath)
-//                                        .stream(fileInputStream, file.length(), -1)
-//                                        .contentType(EventType.getContentTypeByEventType(eventType))
-//                                        .build()
-//                        );
-//                    } catch (IOException | ErrorResponseException | InsufficientDataException | InternalException |
-//                             InvalidKeyException | InvalidResponseException | NoSuchAlgorithmException |
-//                             ServerException |
-//                             XmlParserException e) {
-//                        log.error("Error occurred when uploading song {} to minio", songName, e);
-//                    }
-//                    return Mono.just(songPath);
-//                });
-//    }
+    public Mono<SongMetaData> getSongMetaData(String songId) {
+        return songRepository.findById(Long.parseLong(songId))
+                .flatMap(songEntity -> {
+                    try {
+                        StatObjectResponse stat = minioClient.statObject(
+                                StatObjectArgs.builder()
+                                        .bucket(BUCKET_NAME)
+                                        .object(songEntity.getSongPath())
+                                        .build()
+                        );
+                        return Mono.just(SongMetaData.builder()
+                                .size(stat.size())
+                                .songPath(songEntity.getSongPath())
+                                .songId(songId)
+                                .build());
+                    } catch (Exception e) {
+                        return Mono.error(new RuntimeException("Error getting song metadata", e));
+                    }
+                });
+    }
 
-    public Flux<DataBuffer> streamSong(String songId) {
+    public Mono<ServerResponse> streamSong(ServerRequest request) {
+        String rangeHeader = RequestUtils.getRequestHeader(request, "Range");
+        String songId = RequestUtils.getPathVariable(request, "id");
+        return getSongMetaData(songId)
+                .flatMap(songMetaData -> {
+                    long startByte = 0;
+                    long endByte = songMetaData.getSize() - 1;
+                    if (StringUtils.isNotBlank(rangeHeader) && rangeHeader.startsWith("bytes=")) {
+                        String[] ranges = rangeHeader.substring(6).split("-");
+                        startByte = Long.parseLong(ranges[0]);
+                        if (ranges.length > 1 && StringUtils.isNotBlank(ranges[1])) {
+                            endByte = Long.parseLong(ranges[1]);
+                        }
+                    }
+                    long contentLength = endByte - startByte + 1;
+                    return ServerResponse.status(HttpStatus.PARTIAL_CONTENT.value())
+                            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE)
+                            .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(contentLength))
+                            .header(HttpHeaders.ACCEPT_RANGES, "bytes")
+                            .header(HttpHeaders.CONNECTION, "keep-alive")
+                            .header(HttpHeaders.CONTENT_RANGE, String.format("bytes %d-%d/%d", startByte, endByte, songMetaData.getSize()))
+                            .body(BodyInserters.fromPublisher(streamSong(songId, startByte, endByte), DataBuffer.class));
+                });
+    }
+
+    public Flux<DataBuffer> getImage(String songId) {
+        return songRepository.findById(Long.parseLong(songId))
+                .flux()
+                .flatMap(songEntity -> {
+                    try {
+                        InputStream inputStream = minioClient.getObject(
+                                GetObjectArgs.builder()
+                                        .bucket(BUCKET_NAME)
+                                        .object(songEntity.getImagePath())
+                                        .build()
+                        );
+                        return DataBufferUtils.readInputStream(
+                                () -> inputStream,
+                                new DefaultDataBufferFactory(),
+                                2048
+                        ).doFinally(signalType -> {
+                            try {
+                                inputStream.close();
+                            } catch (Exception e) {
+                                System.out.println("Error closing input stream");
+                            }
+                        });
+                    } catch (Exception e) {
+                        return Flux.error(new BadRequestException("Error retrieving image from MinIO"));
+                    }
+                });
+    }
+
+    public Flux<DataBuffer> streamSong(String songId, long start, long end) {
         return songRepository.findById(Long.parseLong(songId))
                 .flux()
                 .flatMap(song -> {
@@ -177,24 +245,30 @@ public class StorageService {
                                 GetObjectArgs.builder()
                                         .bucket(BUCKET_NAME)
                                         .object(song.getSongPath())
+                                        .offset(start)
+                                        .length(end - start)
                                         .build()
                         );
-                        return Flux.generate(sink -> {
+                        return Flux.create(sink -> {
+                            DataBufferFactory dataBufferFactory = new DefaultDataBufferFactory();
+                            byte[] buffer = new byte[2056];
                             try {
-                                byte[] buffer = new byte[2056];
-                                int bytesRead = inputStream.read(buffer);
-                                if (bytesRead == -1) {
-                                    log.info("No more data available");
-                                    sink.complete();
-                                } else {
+                                int bytesRead;
+                                while ((bytesRead = inputStream.read(buffer)) != -1) {
                                     DataBuffer dataBuffer = dataBufferFactory.allocateBuffer(bytesRead);
                                     dataBuffer.write(buffer, 0, bytesRead);
-                                    log.debug("Read {} bytes", bytesRead);
                                     sink.next(dataBuffer);
                                 }
-                            } catch (Exception e) {
-                                log.error("Error occurred when streaming song {}", song.getSongId(), e);
-                                sink.error(e);
+                                sink.complete();
+                            } catch (IOException e) {
+                                sink.error(new RuntimeException("Error streaming file", e));
+                            } finally {
+                                try {
+                                    log.debug("Stopping streaming song {}", songId);
+                                    inputStream.close();
+                                } catch (IOException e) {
+                                    log.warn("Failed to close InputStream", e);
+                                }
                             }
                         });
                     } catch (Exception e) {

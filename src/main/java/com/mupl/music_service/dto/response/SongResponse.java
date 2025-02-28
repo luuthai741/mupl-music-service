@@ -1,6 +1,7 @@
 package com.mupl.music_service.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,7 +16,9 @@ public class SongResponse {
     private long songId;
     private String title;
     private String album;
+    @JsonIgnore
     private String imagePath;
+    @JsonIgnore
     private String songPath;
     private Boolean isFreeToPlay;
     private int duration;

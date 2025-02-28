@@ -11,9 +11,7 @@ import com.mupl.music_service.service.ArtistService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
@@ -65,10 +63,9 @@ public class ArtistServiceImpl implements ArtistService {
     }
 
     @Override
-    public Mono<PageableResponse> getArtists(int page, int size, String sortBy, Sort.Direction sortOrder) {
-        Sort sort = Sort.by(sortOrder, sortBy);
-        Pageable pageable = PageRequest.of(page - 1, size, sort);
+    public Mono<PageableResponse> getArtists(Pageable pageable) {
         return artistRepository.findAllBy(pageable)
+                .map(artist -> modelMapper.map(artist, ArtistResponse.class))
                 .collectList()
                 .zipWith(artistRepository.count())
                 .map(tuple -> new PageableResponse(tuple.getT1(), pageable, tuple.getT2()));

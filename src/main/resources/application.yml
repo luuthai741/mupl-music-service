@@ -1,6 +1,9 @@
 spring:
   application:
     name: music-service
+  webflux:
+    multipart:
+      max-in-memory-size: 20MB
   kafka:
     bootstrap-servers: 192.168.1.10:29092, 192.168.1.10:29093,192.168.1.10:29094
     producer:

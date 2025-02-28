@@ -14,7 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class SongCreateRequest {
+public class SongRequest {
     private String title;
     private List<Integer> artistIds;
     private List<Integer> genreIds;

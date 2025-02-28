@@ -23,6 +23,9 @@ public class RouteConfig {
         return RouterFunctions
                 .route(RequestPredicates.GET(convertUri("stream/songs/{id}")), songHandler::streamSong)
                 .andRoute(RequestPredicates.GET(convertUri("songs/{id}")), songHandler::getSong)
+                .andRoute(RequestPredicates.GET(convertUri("albums/{albumId}/songs")), songHandler::getSongs)
+                .andRoute(RequestPredicates.GET(convertUri("songs")), songHandler::getSongs)
+                .andRoute(RequestPredicates.GET(convertUri("songs/{id}/image")), songHandler::getSongImage)
                 .andRoute(RequestPredicates.DELETE(convertUri("songs/{id}")), songHandler::deleteSong);
     }
 
@@ -33,7 +36,7 @@ public class RouteConfig {
                 .andRoute(RequestPredicates.GET(convertUri("artists")), artistHandler::getArtists)
                 .andRoute(RequestPredicates.GET(convertUri("artists/{id}")), artistHandler::getArtist)
                 .andRoute(RequestPredicates.PUT(convertUri("artists/{id}")), artistHandler::updateArtist)
-                .andRoute(RequestPredicates.DELETE(convertUri("artists/{id}")),artistHandler::deleteArtist);
+                .andRoute(RequestPredicates.DELETE(convertUri("artists/{id}")), artistHandler::deleteArtist);
     }
 
     @Bean(name = "genreRouter")
@@ -42,7 +45,7 @@ public class RouteConfig {
                 .route(RequestPredicates.POST(convertUri("genres")), genreHandler::createGenre)
                 .andRoute(RequestPredicates.GET(convertUri("genres")), genreHandler::getAllGenres)
                 .andRoute(RequestPredicates.GET(convertUri("genres/{id}")), genreHandler::getGenre)
-                .andRoute(RequestPredicates.DELETE(convertUri("genres/{id}")),genreHandler::deleteGenre);
+                .andRoute(RequestPredicates.DELETE(convertUri("genres/{id}")), genreHandler::deleteGenre);
     }
 
     @Bean(name = "albumRouter")
@@ -53,6 +56,6 @@ public class RouteConfig {
                 .andRoute(RequestPredicates.GET(convertUri("artists/{artistId}/albums")), albumHandler::getAllAlbums)
                 .andRoute(RequestPredicates.GET(convertUri("albums/{id}")), albumHandler::getAlbumById)
                 .andRoute(RequestPredicates.PUT(convertUri("albums/{id}")), albumHandler::updateAlbum)
-                .andRoute(RequestPredicates.DELETE(convertUri("albums/{id}")),albumHandler::deleteAlbum);
+                .andRoute(RequestPredicates.DELETE(convertUri("albums/{id}")), albumHandler::deleteAlbum);
     }
 }
