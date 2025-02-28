@@ -9,10 +9,12 @@ import org.springframework.data.relational.core.mapping.Table;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@Table(name = "mupl_lyric")
-public class LyricEntity {
+@Table(name = "mupl_lyric_detail")
+public class LyricDetailEntity {
     @Id
+    private Long lyricDetailId;
+    private int startTime;
+    private int endTime;
+    private String lyric;
     private Long lyricId;
-    private String name;
-    private Long songId;
 }
