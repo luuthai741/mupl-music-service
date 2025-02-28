@@ -24,10 +24,10 @@ public class AlbumHandler {
     public Mono<ServerResponse> createAlbum(ServerRequest request) {
         return request.bodyToMono(AlbumCreateRequest.class)
                 .flatMap(createRequest -> albumService.createAlbum(createRequest)
-                        .flatMap(response -> ServerResponse.ok().bodyValue(response)))
+                        .flatMap(response -> ServerResponse.status(HttpStatus.CREATED).bodyValue(response)))
                 .onErrorResume(BadRequestException.class, e -> ServerResponse
                         .badRequest()
-                        .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage())));
+                        .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage())));
     }
 
     public Mono<ServerResponse> deleteAlbum(ServerRequest request) {
@@ -36,7 +36,7 @@ public class AlbumHandler {
                 .flatMap(response -> ServerResponse.ok().bodyValue(response))
                 .onErrorResume(BadRequestException.class, e -> ServerResponse
                         .badRequest()
-                        .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage())));
+                        .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage())));
     }
 
     public Mono<ServerResponse> getAllAlbums(ServerRequest request) {
@@ -51,7 +51,7 @@ public class AlbumHandler {
                 .flatMap(response -> ServerResponse.ok().bodyValue(response))
                 .onErrorResume(BadRequestException.class, e -> ServerResponse
                         .badRequest()
-                        .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage())));
+                        .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage())));
     }
 
     public Mono<ServerResponse> updateAlbum(ServerRequest request) {
@@ -61,6 +61,6 @@ public class AlbumHandler {
                         .flatMap(response -> ServerResponse.ok().bodyValue(response)))
                 .onErrorResume(BadRequestException.class, e -> ServerResponse
                         .badRequest()
-                        .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage())));
+                        .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage())));
     }
 }

@@ -46,7 +46,7 @@ public class SongHandler {
     @PutMapping(value = "/api/v1/mupl/songs/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Mono<ResponseEntity<SongResponse>> updateSong(@PathVariable String id, @ModelAttribute SongRequest songRequest) {
         return songService.updateSong(id, songRequest)
-                .map(songResponse -> ResponseEntity.status(HttpStatus.CREATED).body(songResponse))
+                .map(songResponse -> ResponseEntity.ok().body(songResponse))
                 .onErrorResume(IOException.class, e ->
                         Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                                 .body(null))
@@ -62,7 +62,7 @@ public class SongHandler {
     public Mono<ServerResponse> getSong(ServerRequest request) {
         return songService.getSong(RequestUtils.getPathVariable(request, "id"))
                 .flatMap(songResponse -> ServerResponse.ok().bodyValue(songResponse))
-                .onErrorResume(BadRequestException.class, e -> ServerResponse.badRequest().bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage())));
+                .onErrorResume(BadRequestException.class, e -> ServerResponse.badRequest().bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage())));
     }
 
     public Mono<ServerResponse> getSongImage(ServerRequest request) {
@@ -91,6 +91,6 @@ public class SongHandler {
     public Mono<ServerResponse> deleteSong(ServerRequest request) {
         return songService.deleteSong(RequestUtils.getPathVariable(request, "id"))
                 .flatMap(songResponse -> ServerResponse.ok().bodyValue(songResponse))
-                .onErrorResume(BadRequestException.class, e -> ServerResponse.badRequest().bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage())));
+                .onErrorResume(BadRequestException.class, e -> ServerResponse.badRequest().bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage())));
     }
 }
