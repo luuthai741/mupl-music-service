@@ -5,6 +5,7 @@ import com.mupl.music_service.dto.response.ErrorResponse;
 import com.mupl.music_service.exception.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -20,9 +21,10 @@ import reactor.core.publisher.Mono;
 public class GlobalErrorExceptionHandler implements WebExceptionHandler {
     private final ObjectMapper objectMapper;
 
+    @NotNull
     @Override
-    public Mono<Void> handle(ServerWebExchange exchange, Throwable ex) {
-        log.error("Handling exception: {}", ex.getClass().getSimpleName(), ex); // Debug xem có vào đây không
+    public Mono<Void> handle(@NotNull ServerWebExchange exchange, Throwable ex) {
+        log.error("Handling exception", ex);
 
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
         String message = "Unexpected error";

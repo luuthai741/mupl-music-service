@@ -5,14 +5,17 @@ import com.mupl.music_service.dto.response.ErrorResponse;
 import com.mupl.music_service.dto.response.PageableResponse;
 import com.mupl.music_service.exception.BadRequestException;
 import com.mupl.music_service.service.AlbumService;
+import com.mupl.music_service.utils.RequestUtils;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Sort;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class AlbumHandler {
@@ -37,12 +40,10 @@ public class AlbumHandler {
     }
 
     public Mono<ServerResponse> getAllAlbums(ServerRequest request) {
-        int page = Integer.parseInt(request.queryParam("page").orElse("1"));
-        int size = Integer.parseInt(request.queryParam("size").orElse("10"));
-        String sortBy = request.queryParam("sortBy").orElse("albumId");
-        Sort.Direction sortOrder = Sort.Direction.fromString(request.queryParam("sortOrder").orElse("ASC"));
-        String artistId = request.pathVariable("artistId");
-        return ServerResponse.ok().body(albumService.getAlbums(page, size, sortBy, sortOrder, artistId), PageableResponse.class);
+        Pageable pageable = RequestUtils.getPageable(request,"albumId");
+        String artistId = RequestUtils.getPathVariable(request,"artistId");
+
+        return ServerResponse.ok().body(albumService.getAlbums(pageable, artistId), PageableResponse.class);
     }
 
     public Mono<ServerResponse> getAlbumById(ServerRequest request) {

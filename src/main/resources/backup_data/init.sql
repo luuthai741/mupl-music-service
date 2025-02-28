@@ -38,20 +38,21 @@ CREATE TABLE mupl_genre (
 );
 
 CREATE TABLE mupl_artists_songs (
-                                    artist_id BIGINT,
-                                    song_id BIGINT,
-                                    PRIMARY KEY (artist_id, song_id),
+                                    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                                    artist_id BIGINT NOT NULL,
+                                    song_id BIGINT NOT NULL,
                                     FOREIGN KEY (artist_id) REFERENCES mupl_artist(artist_id) ON DELETE CASCADE,
                                     FOREIGN KEY (song_id) REFERENCES mupl_song(song_id) ON DELETE CASCADE
 );
 
 CREATE TABLE mupl_genres_songs (
-                                   genre_id BIGINT,
-                                   song_id BIGINT,
-                                   PRIMARY KEY (genre_id, song_id),
+                                   id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                                   genre_id BIGINT NOT NULL,
+                                   song_id BIGINT NOT NULL,
                                    FOREIGN KEY (genre_id) REFERENCES mupl_genre(genre_id) ON DELETE CASCADE,
                                    FOREIGN KEY (song_id) REFERENCES mupl_song(song_id) ON DELETE CASCADE
 );
+
 
 CREATE TABLE mupl_lyric (
                             lyric_id BIGINT AUTO_INCREMENT PRIMARY KEY,

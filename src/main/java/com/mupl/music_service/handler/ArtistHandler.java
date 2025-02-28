@@ -2,14 +2,14 @@ package com.mupl.music_service.handler;
 
 import com.mupl.music_service.dto.request.artist.ArtistCreateRequest;
 import com.mupl.music_service.dto.request.artist.ArtistUpdateRequest;
-import com.mupl.music_service.dto.response.ArtistResponse;
 import com.mupl.music_service.dto.response.ErrorResponse;
 import com.mupl.music_service.dto.response.PageableResponse;
 import com.mupl.music_service.exception.BadRequestException;
 import com.mupl.music_service.service.ArtistService;
+import com.mupl.music_service.utils.RequestUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -35,11 +35,8 @@ public class ArtistHandler {
     }
 
     public Mono<ServerResponse> getArtists(ServerRequest request) {
-        int page = Integer.parseInt(request.queryParam("page").orElse("1"));
-        int size = Integer.parseInt(request.queryParam("size").orElse("10"));
-        String sortBy = request.queryParam("sortBy").orElse("id");
-        Sort.Direction sortOrder = Sort.Direction.fromString(request.queryParam("sortOrder").orElse("ASC"));
-        return ServerResponse.ok().body(artistService.getArtists(page, size, sortBy, sortOrder), PageableResponse.class);
+        Pageable pageable = RequestUtils.getPageable(request,"artistId");
+        return ServerResponse.ok().body(artistService.getArtists(pageable), PageableResponse.class);
     }
 
     public Mono<ServerResponse> getArtist(ServerRequest request) {

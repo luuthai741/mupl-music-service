@@ -14,13 +14,7 @@ import org.springframework.data.relational.core.mapping.Table;
 @Table(name = "mupl_artists_songs")
 public class ArtistSongEntity {
     @Id
-    private ArtistSongId id;
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ArtistSongId {
-        private Long artistId;
-        private Long songId;
-    }
+    private Long id;
+    private Long songId;
+    private Integer artistId;
 }

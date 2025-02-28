@@ -9,11 +9,9 @@ import com.mupl.music_service.repository.AlbumRepository;
 import com.mupl.music_service.service.AlbumService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -67,27 +65,17 @@ public class AlbumServiceImpl implements AlbumService {
     }
 
     @Override
-    public Mono<PageableResponse> getAlbums(int page, int size, String sortBy, Sort.Direction sortOrder, String artistId) {
-        Pageable pageable = PageRequest.of(page - 1, size, Sort.by(sortOrder, sortBy));
-
+    public Mono<PageableResponse> getAlbums(Pageable pageable, String artistId) {
         Flux<AlbumEntity> albumEntityFlux;
-        if (artistId != null) {
+        if (StringUtils.isNotBlank(artistId)) {
             albumEntityFlux = albumRepository.findAllByArtistId(Integer.parseInt(artistId), pageable);
         } else {
             albumEntityFlux = albumRepository.findAllBy(pageable);
         }
         return albumEntityFlux
+                .map(albumEntity -> modelMapper.map(albumEntity, AlbumResponse.class))
                 .collectList()
                 .zipWith(albumRepository.count())
-                .map(tuple -> {
-                    PageImpl pageImpl = new PageImpl(tuple.getT1(), pageable, tuple.getT2());
-                    return PageableResponse.builder()
-                            .totalPages(pageImpl.getTotalPages())
-                            .totalElements(pageImpl.getTotalElements())
-                            .page(page)
-                            .pageSize(size)
-                            .content(tuple.getT1())
-                            .build();
-                });
+                .map(tuple -> new PageableResponse(tuple.getT1(), pageable, tuple.getT2()));
     }
 }

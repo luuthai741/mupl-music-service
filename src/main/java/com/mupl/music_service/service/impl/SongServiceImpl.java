@@ -1,19 +1,30 @@
 package com.mupl.music_service.service.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mupl.music_service.dto.request.SongCreateRequest;
+import com.mupl.music_service.dto.request.SongRequest;
+import com.mupl.music_service.dto.response.PageableResponse;
+import com.mupl.music_service.dto.response.SongResponse;
 import com.mupl.music_service.entity.SongEntity;
-import com.mupl.music_service.repository.AlbumRepository;
-import com.mupl.music_service.repository.ArtistRepository;
-import com.mupl.music_service.repository.GenreRepository;
+import com.mupl.music_service.exception.BadRequestException;
 import com.mupl.music_service.repository.SongRepository;
+import com.mupl.music_service.service.ArtistSongService;
+import com.mupl.music_service.service.GenreSongService;
 import com.mupl.music_service.service.SongService;
 import com.mupl.music_service.service.StorageService;
+import com.mupl.music_service.utils.constain.EventType;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -21,36 +32,127 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class SongServiceImpl implements SongService {
     private final SongRepository songRepository;
-    private final ArtistRepository artistRepository;
-    private final AlbumRepository albumRepository;
-    private final GenreRepository genreRepository;
+    private final ModelMapper modelMapper;
+    private final ArtistSongService artistSongService;
+    private final GenreSongService genreSongService;
     private final StorageService storageService;
-    private final ObjectMapper objectMapper;
 
     @Override
-    public Mono<SongEntity> createSong(SongCreateRequest songCreateRequest) {
-//        AlbumEntity albumEntity = albumRepository
-//                .findByName(songCreateRequest.getAlbum())
-//                .orElse(null);
-//        GenreEntity genreEntity = genreRepository
-//                .findByName(songCreateRequest.getGenre())
-//                .orElse(null);
-//        SongEntity songEntity = SongEntity.builder()
-//                .title(songCreateRequest.getTitle())
-//                .artists(artistEntities)
-//                .albumEntity(albumEntity)
-//                .genreEntity(genreEntity)
-//                .releasedAt(songCreateRequest.getReleasedAt())
-//                .createdAt(LocalDateTime.now())
-//                .updatedAt(LocalDateTime.now())
-//                .build();
-//        try {
-//            storageService.uploadToMinio(songCreateRequest.getTitle(), FileUtils.convertMultipartFileToFile(songCreateRequest.getFile()));
-//        } catch (IOException e) {
-//            log.error("Error occurred while uploading file", e);
-//        }
-//        return Mono.just(songEntity);
-        return null;
+    public Mono<SongResponse> createSong(SongRequest songRequest) {
+        SongEntity songEntity = modelMapper.map(songRequest, SongEntity.class);
+        songEntity.setCreatedAt(LocalDateTime.now());
+        songEntity.setUpdatedAt(LocalDateTime.now());
+        return songRepository.save(songEntity)
+                .flatMap(entity -> Mono.when(
+                                createArtistSongRelationship(entity.getSongId(), songRequest.getArtistIds()),
+                                createGenreSongRelationship(entity.getSongId(), songRequest.getGenreIds()))
+                        .thenReturn(modelMapper.map(songEntity, SongResponse.class))
+                        .doOnSuccess(response -> {
+                            storageService.uploadFile(response.getSongId(), songRequest.getImageFile(), EventType.IMAGE_UPLOADED)
+                                    .subscribeOn(Schedulers.boundedElastic())
+                                    .subscribe();
+                            storageService.uploadFile(response.getSongId(), songRequest.getSongFile(), EventType.SONG_UPLOADED)
+                                    .subscribeOn(Schedulers.boundedElastic())
+                                    .subscribe();
+                        })
+                );
     }
 
+    @Override
+    public Mono<SongResponse> getSong(String songId) {
+        return songRepository.findById(Long.parseLong(songId))
+                .switchIfEmpty(Mono.error(new BadRequestException("Song id not found")))
+                .flatMap(entity -> Mono.just(modelMapper.map(entity, SongResponse.class)));
+    }
+
+    @Override
+    public Mono<SongResponse> deleteSong(String songId) {
+        return songRepository.findById(Long.parseLong(songId))
+                .switchIfEmpty(Mono.error(new BadRequestException("Song id not found")))
+                .flatMap(entity -> songRepository.delete(entity).then(Mono.just(modelMapper.map(entity, SongResponse.class))))
+                .doOnSuccess(response -> {
+                    storageService.deleteObject(response.getSongPath())
+                            .subscribeOn(Schedulers.boundedElastic())
+                            .subscribe();
+                    storageService.deleteObject(response.getImagePath())
+                            .subscribeOn(Schedulers.boundedElastic())
+                            .subscribe();
+                });
+    }
+
+    @Override
+    public Mono<PageableResponse> getSongs(Pageable pageable, String albumId) {
+        Flux<SongEntity> flux;
+        if (StringUtils.isNotBlank(albumId)) {
+            flux = songRepository.findAllByAlbumId(Integer.parseInt(albumId), pageable);
+        } else {
+            flux = songRepository.findAllBy(pageable);
+        }
+        return flux
+                .map(song -> modelMapper.map(song, SongResponse.class))
+                .collectList()
+                .zipWith(songRepository.count())
+                .map(tuple -> new PageableResponse(tuple.getT1(), pageable, tuple.getT2()));
+    }
+
+    @Override
+    public Mono<PageableResponse> getSongs(Pageable pageable, List<String> ids) {
+        List<Integer> mapIds = ids.stream().map(Integer::parseInt).toList();
+        return songRepository.findByGenres(mapIds, pageable)
+                .map(song -> modelMapper.map(song, SongResponse.class))
+                .collectList()
+                .zipWith(songRepository.count())
+                .map(tuple -> new PageableResponse(tuple.getT1(), pageable, tuple.getT2()));
+
+    }
+
+    @Override
+    public Mono<SongResponse> updateSong(String songId, SongRequest songRequest) {
+        long id = Long.parseLong(songId);
+        return songRepository.findById(id)
+                .flatMap(entity -> {
+                    entity.setReleasedAt(songRequest.getReleasedAt());
+                    entity.setTitle(songRequest.getTitle());
+                    entity.setAlbumId(songRequest.getAlbumId());
+                    entity.setIsFreeToPlay(songRequest.getIsFreeToPlay());
+                    return songRepository.save(entity)
+                            .map(song -> modelMapper.map(song, SongResponse.class));
+                })
+                .doOnSuccess(response -> {
+                    storageService.deleteObject(response.getImagePath())
+                            .then(Mono.defer(() -> storageService.uploadFile(id, songRequest.getImageFile(), EventType.IMAGE_UPLOADED)))
+                            .subscribeOn(Schedulers.boundedElastic())
+                            .subscribe();
+                    storageService.deleteObject(response.getSongPath())
+                            .then(Mono.defer(() -> storageService.uploadFile(id, songRequest.getSongFile(), EventType.SONG_UPLOADED)))
+                            .subscribeOn(Schedulers.boundedElastic())
+                            .subscribe();
+                    createArtistSongRelationship(id, songRequest.getArtistIds())
+                            .subscribeOn(Schedulers.boundedElastic())
+                            .subscribe();
+                    createGenreSongRelationship(id, songRequest.getGenreIds())
+                            .subscribeOn(Schedulers.boundedElastic())
+                            .subscribe();
+                });
+    }
+
+    private Mono<Void> createArtistSongRelationship(Long songId, List<Integer> artistIds) {
+        if (CollectionUtils.isEmpty(artistIds)) {
+            return Mono.empty();
+        }
+        return artistSongService.deleteAllBySongId(songId)
+                .then(Mono.defer(() -> Flux.fromIterable(artistIds)
+                        .flatMap(artistId -> artistSongService.create(artistId, songId))
+                        .then()));
+    }
+
+    private Mono<Void> createGenreSongRelationship(Long songId, List<Integer> genreIds) {
+        if (CollectionUtils.isEmpty(genreIds)) {
+            return Mono.empty();
+        }
+        return genreSongService.deleteAllBySongId(songId)
+                .then(Mono.defer(() -> Flux.fromIterable(genreIds)
+                        .flatMap(genreId -> genreSongService.create(genreId, songId))
+                        .then()));
+    }
 }

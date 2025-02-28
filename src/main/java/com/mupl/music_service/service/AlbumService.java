@@ -3,7 +3,7 @@ package com.mupl.music_service.service;
 import com.mupl.music_service.dto.request.album.AlbumCreateRequest;
 import com.mupl.music_service.dto.response.AlbumResponse;
 import com.mupl.music_service.dto.response.PageableResponse;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Pageable;
 import reactor.core.publisher.Mono;
 
 public interface AlbumService {
@@ -15,5 +15,5 @@ public interface AlbumService {
 
     Mono<AlbumResponse> deleteAlbum(String id);
 
-    Mono<PageableResponse> getAlbums(int page, int size, String sortBy, Sort.Direction sortOrder, String artistId);
+    Mono<PageableResponse> getAlbums(Pageable pageable, String artistId);
 }

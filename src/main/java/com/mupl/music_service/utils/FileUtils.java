@@ -1,19 +1,18 @@
 package com.mupl.music_service.utils;
 
-import com.mupl.music_service.utils.constain.DateTimePattern;
-import org.springframework.http.codec.multipart.FilePart;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FilenameUtils;
 
-import java.io.File;
-import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.UUID;
 
+@Slf4j
 public class FileUtils {
-    public static String getFileName(String songName) {
-        return songName.replace(" ", "_") + ".mp3";
-    }
-
-    public static File convertMultipartFileToFile(FilePart originalFile) throws IOException {
-        File file = File.createTempFile("_updload",".mp3");
-        originalFile.transferTo(file);
-        return file;
+    public static String getFileName(Long songId, String songName) {
+        String extension = FilenameUtils.getExtension(songName);
+        DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("dd_MM_yyyy");
+        String date = LocalDateTime.now().format(dateFormat);
+        return String.format("%s/%s_%s.%s", songId, date, UUID.randomUUID(), extension);
     }
 }
