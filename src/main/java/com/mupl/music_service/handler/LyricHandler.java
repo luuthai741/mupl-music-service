@@ -23,12 +23,10 @@ public class LyricHandler {
     public Mono<ServerResponse> createLyric(ServerRequest request) {
         return request.bodyToMono(LyricRequest.class)
                 .flatMap(lyricRequest -> lyricService.createLyric(lyricRequest)
-                        .flatMap(response -> ServerResponse
-                                .ok()
-                                .bodyValue(response))
+                        .flatMap(response -> ServerResponse.status(HttpStatus.CREATED).bodyValue(response))
                         .onErrorResume(BadRequestException.class, e -> ServerResponse
                                 .badRequest()
-                                .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage()))));
+                                .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage()))));
     }
 
     public Mono<ServerResponse> updateLyric(ServerRequest request) {
@@ -40,7 +38,7 @@ public class LyricHandler {
                                 .bodyValue(response))
                         .onErrorResume(BadRequestException.class, e -> ServerResponse
                                 .badRequest()
-                                .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage()))));
+                                .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage()))));
     }
 
     public Mono<ServerResponse> getLyrics(ServerRequest request) {
@@ -56,7 +54,7 @@ public class LyricHandler {
                         .bodyValue(response))
                 .onErrorResume(BadRequestException.class, e -> ServerResponse
                         .badRequest()
-                        .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage())));
+                        .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage())));
     }
     public Mono<ServerResponse> getLyricBySong(ServerRequest request) {
         String id = RequestUtils.getPathVariable(request, "id");
@@ -66,7 +64,7 @@ public class LyricHandler {
                         .bodyValue(response))
                 .onErrorResume(BadRequestException.class, e -> ServerResponse
                         .badRequest()
-                        .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage())));
+                        .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage())));
     }
     public Mono<ServerResponse> deleteAlbum(ServerRequest request) {
         String id = request.pathVariable("id");
@@ -74,6 +72,6 @@ public class LyricHandler {
                 .flatMap(response -> ServerResponse.ok().bodyValue(response))
                 .onErrorResume(BadRequestException.class, e -> ServerResponse
                         .badRequest()
-                        .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage())));
+                        .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage())));
     }
 }

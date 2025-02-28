@@ -20,11 +20,11 @@ public class GenreHandler {
     public Mono<ServerResponse> createGenre(ServerRequest request) {
         return request.bodyToMono(GenreRequest.class)
                 .flatMap(genreRequest -> genreService.createGenre(genreRequest)
-                        .flatMap(genreResponse -> ServerResponse.ok().bodyValue(genreResponse)))
+                        .flatMap(genreResponse -> ServerResponse.status(HttpStatus.CREATED).bodyValue(genreResponse)))
                 .onErrorResume(BadRequestException.class, e ->
                         ServerResponse.status(HttpStatus.BAD_REQUEST)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage()))
+                                .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage()))
                 );
     }
 
@@ -35,7 +35,7 @@ public class GenreHandler {
                 .onErrorResume(BadRequestException.class, e ->
                         ServerResponse.status(HttpStatus.BAD_REQUEST)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage()))
+                                .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage()))
                 );
     }
 
@@ -46,7 +46,7 @@ public class GenreHandler {
                 .onErrorResume(BadRequestException.class, e ->
                         ServerResponse.status(HttpStatus.BAD_REQUEST)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage()))
+                                .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage()))
                 );
     }
 

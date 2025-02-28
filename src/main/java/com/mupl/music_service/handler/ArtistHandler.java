@@ -26,16 +26,16 @@ public class ArtistHandler {
     public Mono<ServerResponse> createArtist(ServerRequest request) {
         return request.bodyToMono(ArtistCreateRequest.class)
                 .flatMap(artistCreateRequest -> artistService.createArtist(artistCreateRequest)
-                        .flatMap(artistResponse -> ServerResponse.ok().bodyValue(artistResponse)))
+                        .flatMap(artistResponse -> ServerResponse.status(HttpStatus.CREATED).bodyValue(artistResponse)))
                 .onErrorResume(BadRequestException.class, e ->
                         ServerResponse.status(HttpStatus.BAD_REQUEST)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage()))
+                                .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage()))
                 );
     }
 
     public Mono<ServerResponse> getArtists(ServerRequest request) {
-        Pageable pageable = RequestUtils.getPageable(request,"artistId");
+        Pageable pageable = RequestUtils.getPageable(request, "artistId");
         return ServerResponse.ok().body(artistService.getArtists(pageable), PageableResponse.class);
     }
 
@@ -46,7 +46,7 @@ public class ArtistHandler {
                 .onErrorResume(BadRequestException.class, e ->
                         ServerResponse.status(HttpStatus.BAD_REQUEST)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage()))
+                                .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage()))
                 );
     }
 
@@ -57,7 +57,7 @@ public class ArtistHandler {
                 .onErrorResume(BadRequestException.class, e ->
                         ServerResponse.status(HttpStatus.BAD_REQUEST)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage()))
+                                .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage()))
                 );
     }
 
@@ -69,7 +69,7 @@ public class ArtistHandler {
                         .onErrorResume(BadRequestException.class, e ->
                                 ServerResponse.status(HttpStatus.BAD_REQUEST)
                                         .contentType(MediaType.APPLICATION_JSON)
-                                        .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), e.getMessage()))
+                                        .bodyValue(new ErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage()))
                         ));
     }
 }
