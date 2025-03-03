@@ -37,4 +37,6 @@ minio:
   access-key: ${MINIO_ACCESS_KEY:kIlhwnt7Za2rPDKk2UUi}
   secret-key: ${MINIO_SECRET_KEY:t1NHe7LpHLJEVfRO63YJmbebpkzM029HOErnMCib}
 
+services:
+  playlist-service: ${PLAYLIST_SERVICE:http://localhost:12000}
 #debug: true

@@ -1,6 +1,7 @@
 package com.mupl.music_service.config;
 
 import com.mupl.music_service.handler.*;
+import com.mupl.music_service.handler.internal.SongInternalHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.server.RequestPredicates;
@@ -65,5 +66,11 @@ public class RouteConfig {
                 .andRoute(RequestPredicates.GET(convertUri("albums/{id}")), albumHandler::getAlbumById)
                 .andRoute(RequestPredicates.PUT(convertUri("albums/{id}")), albumHandler::updateAlbum)
                 .andRoute(RequestPredicates.DELETE(convertUri("albums/{id}")), albumHandler::deleteAlbum);
+    }
+
+    @Bean(name = "internalServiceRouter")
+    public RouterFunction<ServerResponse> internalRouterFunction(SongInternalHandler songInternalHandler) {
+        return RouterFunctions
+                .route(RequestPredicates.GET(convertUri("internal/songs/{id}")), songInternalHandler::getSong);
     }
 }

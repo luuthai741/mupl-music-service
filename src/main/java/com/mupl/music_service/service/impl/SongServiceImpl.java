@@ -1,10 +1,12 @@
 package com.mupl.music_service.service.impl;
 
+import com.mupl.music_service.client.PlaylistServiceClient;
 import com.mupl.music_service.dto.request.SongRequest;
 import com.mupl.music_service.dto.response.PageableResponse;
 import com.mupl.music_service.dto.response.SongResponse;
 import com.mupl.music_service.entity.SongEntity;
 import com.mupl.music_service.exception.BadRequestException;
+import com.mupl.music_service.repository.ArtistRepository;
 import com.mupl.music_service.repository.SongRepository;
 import com.mupl.music_service.service.ArtistSongService;
 import com.mupl.music_service.service.GenreSongService;
@@ -24,7 +26,9 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -36,6 +40,8 @@ public class SongServiceImpl implements SongService {
     private final ArtistSongService artistSongService;
     private final GenreSongService genreSongService;
     private final StorageService storageService;
+    private final ArtistRepository artistRepository;
+    private final PlaylistServiceClient playlistServiceClient;
 
     @Override
     public Mono<SongResponse> createSong(SongRequest songRequest) {
@@ -67,7 +73,8 @@ public class SongServiceImpl implements SongService {
 
     @Override
     public Mono<SongResponse> deleteSong(String songId) {
-        return songRepository.findById(Long.parseLong(songId))
+        long id = Long.parseLong(songId);
+        return songRepository.findById(id)
                 .switchIfEmpty(Mono.error(new BadRequestException("Song id not found")))
                 .flatMap(entity -> songRepository.delete(entity).then(Mono.just(modelMapper.map(entity, SongResponse.class))))
                 .doOnSuccess(response -> {
@@ -75,6 +82,16 @@ public class SongServiceImpl implements SongService {
                             .subscribeOn(Schedulers.boundedElastic())
                             .subscribe();
                     storageService.deleteObject(response.getImagePath())
+                            .subscribeOn(Schedulers.boundedElastic())
+                            .subscribe();
+                    // todo: duplicating code
+                    genreSongService.deleteAllBySongId(id)
+                            .subscribeOn(Schedulers.boundedElastic())
+                            .subscribe();
+                    artistSongService.deleteAllBySongId(id)
+                            .subscribeOn(Schedulers.boundedElastic())
+                            .subscribe();
+                    playlistServiceClient.deletePlaylistBySongId(id)
                             .subscribeOn(Schedulers.boundedElastic())
                             .subscribe();
                 });
@@ -134,6 +151,22 @@ public class SongServiceImpl implements SongService {
                             .subscribeOn(Schedulers.boundedElastic())
                             .subscribe();
                 });
+    }
+
+    @Override
+    public Mono<Map<String, Object>> getSongInfo(String songId) {
+        long id = Long.parseLong(songId);
+        return songRepository.findById(id)
+                .switchIfEmpty(Mono.error(new BadRequestException("Song id not found")))
+                .flatMap(songEntity -> artistRepository.findAllBySongId(id)
+                        .collectList()
+                        .flatMap(artistEntities -> {
+                            Map<String, Object> map = new HashMap<>();
+                            map.put("artists", artistEntities);
+                            map.put("songName", songEntity.getTitle());
+                            map.put("songId", id);
+                            return Mono.just(map);
+                        }));
     }
 
     private Mono<Void> createArtistSongRelationship(Long songId, List<Integer> artistIds) {

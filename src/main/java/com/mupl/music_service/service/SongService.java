@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.Map;
 
 public interface SongService {
     Mono<SongResponse> createSong(SongRequest songRequest);
@@ -15,4 +16,5 @@ public interface SongService {
     Mono<PageableResponse> getSongs(Pageable pageable, String albumId);
     Mono<PageableResponse> getSongs(Pageable pageable, List<String> ids);
     Mono<SongResponse> updateSong(String songId, SongRequest songRequest);
+    Mono<Map<String,Object>> getSongInfo(String songId);
 }

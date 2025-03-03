@@ -96,6 +96,9 @@ public class StorageService {
     }
 
     public Mono<Void> deleteObject(String objectName) {
+        if (StringUtils.isBlank(objectName)) {
+            return Mono.empty();
+        }
         return Mono.fromCallable(() -> {
             minioClient.removeObject(
                     RemoveObjectArgs.builder()
