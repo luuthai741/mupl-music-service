@@ -30,11 +30,13 @@ spring:
     level:
       org.springframework.r2dbc: DEBUG
 server:
-  port: 8080
+  port: 11000
 
 minio:
   host: ${MINIO_HOST:http://192.168.1.10:10000}
   access-key: ${MINIO_ACCESS_KEY:kIlhwnt7Za2rPDKk2UUi}
   secret-key: ${MINIO_SECRET_KEY:t1NHe7LpHLJEVfRO63YJmbebpkzM029HOErnMCib}
 
+services:
+  playlist-service: ${PLAYLIST_SERVICE:http://localhost:12000}
 #debug: true

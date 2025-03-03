@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.config.CorsRegistry;
 import org.springframework.web.reactive.config.WebFluxConfigurer;
+import org.springframework.web.reactive.function.client.WebClient;
 
 @Configuration
 public class CommonConfig {
@@ -43,5 +44,10 @@ public class CommonConfig {
                         .allowedMethods("GET", "POST");
             }
         };
+    }
+
+    @Bean
+    public WebClient webClient(WebClient.Builder builder) {
+            return builder.build();
     }
 }
