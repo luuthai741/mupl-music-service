@@ -1,18 +1,18 @@
 package com.mupl.music_service.service.impl;
 
-import com.mupl.music_service.client.PlaylistServiceClient;
 import com.mupl.music_service.dto.request.SongRequest;
 import com.mupl.music_service.dto.response.PageableResponse;
 import com.mupl.music_service.dto.response.SongResponse;
 import com.mupl.music_service.entity.SongEntity;
 import com.mupl.music_service.exception.BadRequestException;
+import com.mupl.music_service.kafka.producer.SongProducer;
 import com.mupl.music_service.repository.ArtistRepository;
 import com.mupl.music_service.repository.SongRepository;
 import com.mupl.music_service.service.ArtistSongService;
 import com.mupl.music_service.service.GenreSongService;
 import com.mupl.music_service.service.SongService;
 import com.mupl.music_service.service.StorageService;
-import com.mupl.music_service.utils.constain.EventType;
+import com.mupl.music_service.utils.constain.FileUploadType;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,7 +41,7 @@ public class SongServiceImpl implements SongService {
     private final GenreSongService genreSongService;
     private final StorageService storageService;
     private final ArtistRepository artistRepository;
-    private final PlaylistServiceClient playlistServiceClient;
+    private final SongProducer songProducer;
 
     @Override
     public Mono<SongResponse> createSong(SongRequest songRequest) {
@@ -54,10 +54,10 @@ public class SongServiceImpl implements SongService {
                                 createGenreSongRelationship(entity.getSongId(), songRequest.getGenreIds()))
                         .thenReturn(modelMapper.map(songEntity, SongResponse.class))
                         .doOnSuccess(response -> {
-                            storageService.uploadFile(response.getSongId(), songRequest.getImageFile(), EventType.IMAGE_UPLOADED)
+                            storageService.uploadFile(response.getSongId(), songRequest.getImageFile(), FileUploadType.IMAGE_UPLOADED)
                                     .subscribeOn(Schedulers.boundedElastic())
                                     .subscribe();
-                            storageService.uploadFile(response.getSongId(), songRequest.getSongFile(), EventType.SONG_UPLOADED)
+                            storageService.uploadFile(response.getSongId(), songRequest.getSongFile(), FileUploadType.SONG_UPLOADED)
                                     .subscribeOn(Schedulers.boundedElastic())
                                     .subscribe();
                         })
@@ -91,7 +91,7 @@ public class SongServiceImpl implements SongService {
                     artistSongService.deleteAllBySongId(id)
                             .subscribeOn(Schedulers.boundedElastic())
                             .subscribe();
-                    playlistServiceClient.deletePlaylistBySongId(id)
+                    songProducer.sendSongDeleteEvent(id)
                             .subscribeOn(Schedulers.boundedElastic())
                             .subscribe();
                 });
@@ -137,11 +137,11 @@ public class SongServiceImpl implements SongService {
                 })
                 .doOnSuccess(response -> {
                     storageService.deleteObject(response.getImagePath())
-                            .then(Mono.defer(() -> storageService.uploadFile(id, songRequest.getImageFile(), EventType.IMAGE_UPLOADED)))
+                            .then(Mono.defer(() -> storageService.uploadFile(id, songRequest.getImageFile(), FileUploadType.IMAGE_UPLOADED)))
                             .subscribeOn(Schedulers.boundedElastic())
                             .subscribe();
                     storageService.deleteObject(response.getSongPath())
-                            .then(Mono.defer(() -> storageService.uploadFile(id, songRequest.getSongFile(), EventType.SONG_UPLOADED)))
+                            .then(Mono.defer(() -> storageService.uploadFile(id, songRequest.getSongFile(), FileUploadType.SONG_UPLOADED)))
                             .subscribeOn(Schedulers.boundedElastic())
                             .subscribe();
                     createArtistSongRelationship(id, songRequest.getArtistIds())

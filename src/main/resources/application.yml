@@ -5,20 +5,14 @@ spring:
     multipart:
       max-in-memory-size: 20MB
   kafka:
-    bootstrap-servers: 192.168.1.10:29092, 192.168.1.10:29093,192.168.1.10:29094
+    bootstrap-servers: 192.168.1.10:29092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.ByteArraySerializer
-    properties:
-      compression.type: lz4
-      max.request.size: 20000000
     consumer:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
       enable-auto-commit: false
-      properties:
-        fetch.max.bytes: 20000000
-        max.partition.fetch.bytes: 20000000
   r2dbc:
     url: r2dbc:mysql://${DB_URL:192.168.1.10}:${DB_PORT:3306}/${DB_NAME:mupl_music}
     username: ${DB_USER:root}

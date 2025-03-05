@@ -6,7 +6,7 @@ import com.mupl.music_service.exception.BadRequestException;
 import com.mupl.music_service.repository.SongRepository;
 import com.mupl.music_service.utils.FileUtils;
 import com.mupl.music_service.utils.RequestUtils;
-import com.mupl.music_service.utils.constain.EventType;
+import com.mupl.music_service.utils.constain.FileUploadType;
 import io.minio.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -78,10 +78,10 @@ public class StorageService {
                 );
     }
 
-    public Mono<String> uploadToMinio(Long songId, String songName, byte[] fileData, EventType eventType) {
+    public Mono<String> uploadToMinio(Long songId, String songName, byte[] fileData, FileUploadType fileUploadType) {
         checkBucket();
         String filePath = FileUtils.getFileName(songId, songName);
-        log.info("uploadToMinio: songId={}, filePath={}, eventType={}", songId, filePath, eventType);
+        log.info("uploadToMinio: songId={}, filePath={}, eventType={}", songId, filePath, fileUploadType);
         return Mono.fromCallable(() -> {
             ByteArrayInputStream inputStream = new ByteArrayInputStream(fileData);
             minioClient.putObject(
@@ -89,7 +89,7 @@ public class StorageService {
                             .bucket(BUCKET_NAME)
                             .object(filePath)
                             .stream(inputStream, fileData.length, -1)
-                            .contentType(EventType.getContentTypeByEventType(eventType))
+                            .contentType(FileUploadType.getContentTypeByEventType(fileUploadType))
                             .build());
             return filePath;
         });
@@ -111,9 +111,9 @@ public class StorageService {
         });
     }
 
-    public Mono<Void> uploadFile(Long songId, FilePart filePart, EventType eventType) {
+    public Mono<Void> uploadFile(Long songId, FilePart filePart, FileUploadType fileUploadType) {
         if (ObjectUtils.isEmpty(filePart)) {
-            log.info("Event {} filePart is empty", eventType);
+            log.info("Event {} filePart is empty", fileUploadType);
             return Mono.empty();
         }
         return DataBufferUtils.join(filePart.content())
@@ -121,10 +121,10 @@ public class StorageService {
                     try {
                         byte[] bytes = new byte[dataBuffer.readableByteCount()];
                         dataBuffer.read(bytes);
-                        return uploadToMinio(songId, filePart.filename(), bytes, eventType)
+                        return uploadToMinio(songId, filePart.filename(), bytes, fileUploadType)
                                 .flatMap(filePath -> songRepository.findById(songId)
                                         .flatMap(song -> {
-                                            setBaseOnEventType(eventType, song, filePath, bytes);
+                                            setBaseOnEventType(fileUploadType, song, filePath, bytes);
                                             log.info("Update song {}, path {}", song, filePath);
                                             return songRepository.save(song).then(Mono.empty());
                                         }));
@@ -138,8 +138,8 @@ public class StorageService {
                 }).then();
     }
 
-    private void setBaseOnEventType(EventType eventType, SongEntity songEntity, String filePath, byte[] fileBytes) {
-        switch (eventType) {
+    private void setBaseOnEventType(FileUploadType fileUploadType, SongEntity songEntity, String filePath, byte[] fileBytes) {
+        switch (fileUploadType) {
             case SONG_UPLOADED -> {
                 songEntity.setSongPath(filePath);
                 songEntity.setDuration(getDuration(fileBytes));

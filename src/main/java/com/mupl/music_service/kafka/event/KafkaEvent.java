@@ -1,6 +1,6 @@
 package com.mupl.music_service.kafka.event;
 
-import com.mupl.music_service.utils.constain.EventType;
+import com.mupl.music_service.utils.constain.KafkaEventType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @Builder
 public class KafkaEvent<T> {
     private String eventId;
-    private EventType eventType;
+    private String eventType;
     private LocalDateTime eventTime;
     private String source;
     private String correlationId;
